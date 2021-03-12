@@ -1,7 +1,8 @@
-#define  _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+char* readLine(FILE *file, char *buffer);
 
 /**
  * naive verifica a existência de um padrão num determinado texto
@@ -22,8 +23,6 @@ int main(int argc, char *argv[]){
     FILE *fin, *fout;
     char *line = NULL, *text = NULL;
     char *n_pat = NULL, *k_pat = NULL, *b_pat = NULL;
-    size_t len = 0;
-    ssize_t read;
     int op_flag[4] = {0,0,0,0};
 
     if(argc < 2){
@@ -37,27 +36,28 @@ int main(int argc, char *argv[]){
     if(fout == NULL)
         exit(EXIT_FAILURE);
 
-    while((read = getline(&line, &len, fin)) != -1) {
+    while (!feof(fin)){
+        line = readLine(fin, line);
         /* Verificar a primeira letra da linha e a partir
         * daí fazer a operação desejada */
         if(line[0] == 'T'){
             op_flag[0] = 1;
-            text = safeMalloc(sizeof(char)*(read-1));
+            text = safeMalloc(sizeof(char)*(strlen(line)-1));
             strcpy(text, line+2);
         }else if(line[0] == 'N'){
             /* Naive algorithm */
-            n_pat = safeMalloc(sizeof(char)*(read-1));
+            n_pat = safeMalloc(sizeof(char)*(strlen(line)-1));
             op_flag[1] = 1;
             strcpy(n_pat, line+2);
             naive(fout, text, n_pat);
         }else if(line[0] == 'K'){
             /* Knuth-Morris-Pratt algorithm */
-            k_pat = safeMalloc(sizeof(char)*(read-1));
+            k_pat = safeMalloc(sizeof(char)*(strlen(line)-1));
             op_flag[2] = 1;
             strcpy(k_pat, line+2);
         }else if(line[0] == 'B'){
             /* Boyer-Moore algorithm */
-            b_pat = safeMalloc(sizeof(char)*(read-1));
+            b_pat = safeMalloc(sizeof(char)*(strlen(line)-1));
             op_flag[3] = 1;
             strcpy(b_pat, line+2);
         }else if(line[0] == 'X'){
@@ -79,9 +79,43 @@ int main(int argc, char *argv[]){
             exit(0);
         }
     }
-    exit(EXIT_SUCCESS);
 
     return 0;
+}
+
+char* readLine(FILE *file, char *buffer){
+
+    int maxLen = 128, count = 0;
+    char ch;
+
+    buffer = safeMalloc(sizeof(char) * maxLen);
+
+    if (file == NULL) {
+        printf("Ficheiro input vazio.");
+        exit(1);
+    }
+
+    ch = getc(file);
+    /* Percorrer ficheiro caracter a caracter 
+    * até encontrar um \n ou EOF */
+    while ((ch != '\n') && (ch != EOF)) {
+        if (count == maxLen) {
+            maxLen += 1;
+            buffer = realloc(buffer, maxLen);
+            if (buffer == NULL) {
+                printf("Erro de memória no buffer.");
+                exit(EXIT_FAILURE);
+            }
+        }
+        buffer[count] = ch;
+        count++;
+        ch = getc(file);
+    }
+
+    buffer[count] = '\0';
+    buffer = realloc(buffer, count + 1);
+
+    return buffer;
 }
 
 void naive(FILE *file, char *text, char *pat){
