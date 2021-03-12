@@ -2,6 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+/**
+ * readLine lê as linhas de um ficheiro letra a letra
+ * e aloca memória para um buffer com o tamanho da linha ldia
+ * \param file ficheiro de onde são lidas as linhas
+ * \param buffer string a ser preenchida com o que foi lido
+ */
 char* readLine(FILE *file, char *buffer);
 
 /**
@@ -78,6 +84,7 @@ int main(int argc, char *argv[]){
             }
             exit(0);
         }
+        free(line);
     }
 
     return 0;
