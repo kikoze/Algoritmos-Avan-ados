@@ -11,11 +11,20 @@
 char* readLine(FILE *file, char *buffer);
 
 /**
- * naive verifica a existência de um padrão num determinado texto
+ * naive verifica a existência de um padrão num determinado 
+ * texto utilizado o naive algorithm de procura
  * \param text texto onde um certo padrão deve ser procurado
  * \param pat padrão a encontrar
  */
 void naive(FILE *file, char *text, char *pat);
+
+/**
+ * naive verifica a existência de um padrão num determinado 
+ * texto utilizado o algoritmo Knuth-Morris-Pratt
+ * \param text texto onde um certo padrão deve ser procurado
+ * \param pat padrão a encontrar
+ */
+void kmt(FILE *file, char *text, char *pat);
 
 /**
  * safeMalloc faz o malloc e depois garante que a memória foi alocada
@@ -61,6 +70,7 @@ int main(int argc, char *argv[]){
             k_pat = safeMalloc(sizeof(char)*(strlen(line)-1));
             op_flag[2] = 1;
             strcpy(k_pat, line+2);
+            kmt(fout, text, k_pat);
         }else if(line[0] == 'B'){
             /* Boyer-Moore algorithm */
             b_pat = safeMalloc(sizeof(char)*(strlen(line)-1));
@@ -131,9 +141,9 @@ void naive(FILE *file, char *text, char *pat){
 
     /* Percorre o texto todo até ao segmento de 
     * tamanho igual ao padrão a encontrar */
-    for(n=0; n<strlen(text)-strlen(pat); n++){
+    for(n = 0; n < strlen(text)-strlen(pat); n++){
         count = 0;
-        for(m=0; m<strlen(pat)-1; m++){
+        for(m = 0; m < strlen(pat)-1; m++){
             if(pat[m] == text[n+m]){
                 count++;
             }
@@ -141,12 +151,55 @@ void naive(FILE *file, char *text, char *pat){
         /* Se todos caracteres de pat tiverem 
         * correspondência num dado ciclo, então 
         * o padrão foi encontrado */
-        if(count == strlen(pat)-1){
+        if(count == strlen(pat)-1)
             fprintf(file, "%d ", n);
-            if(n == strlen(text)-strlen(pat)-1)
-                fprintf(file, "%d\n", n);
-        }
     }
+    fprintf(file, "\n");
+}
+
+/* Função ainda não terminada */
+void kmt(FILE *file, char *text, char *pat){
+
+    int count = 0, m = 0, n = 0, i = 0, j = 0;
+    int *pre = NULL;
+
+    pre = safeMalloc(sizeof(int)*strlen(pat));
+
+    /* Construir a prefix table */
+    n = strlen(text);
+    m = strlen(pat);
+    pre[0] = 0;
+    for(j = 1; j < m; j++){
+        while(i > 0 && pat[i+1] != pat[j])
+            i = pre[i];
+        if(pat[i+1] == pat[j])
+            i++;
+        pre[j] = i;
+    }
+    i = 0;
+    j = 0;
+
+    /* Encontrar padrão */
+    while(i < n){ 
+        count++;
+        if(pat[j] == text[i]){ 
+            /*count++;*/
+            j++; 
+            i++; 
+        }
+        if(j == m){   
+            count++; 
+            fprintf(file, "%d ", i-j);
+            j = pre[j-1]; 
+        }else if(i < n && pat[j] != text[i]){ 
+            /*count++;*/
+            if(j != 0) 
+                j = pre[j-1]; 
+            else
+                i = i+1; 
+        } 
+    } 
+    fprintf(file,"\n%d\n",count);
 }
 
 void* safeMalloc(size_t size){
