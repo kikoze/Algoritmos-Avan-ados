@@ -21,13 +21,31 @@ char* readLine(FILE *file, char *buffer);
 void naive(FILE *file, char *text, char *pat);
 
 /**
- * naive verifica a existência de um padrão num determinado 
+ * kmp verifica a existência de um padrão num determinado 
  * texto utilizado o algoritmo Knuth-Morris-Pratt
  * \param file ficheiro onde é escrito o output
  * \param text texto onde um certo padrão deve ser procurado
  * \param pat padrão a encontrar
  */
 void kmp(FILE *file, char *text, char *pat);
+
+/**
+ * bm verifica a existência de um padrão num determinado 
+ * texto utilizado o algoritmo Boyer-Moore
+ * \param text texto onde um certo padrão deve ser procurado
+ * \param pat padrão a encontrar
+ */
+void bm(FILE *file, char *text, char *pat);
+
+int bm_aux(char letter, char *table_letters, int *shit_values);
+
+/**
+ * max retorna o máximo entre dois inteiros
+ * \param x primeiro inteiro
+ * \param y segundo inteiro
+ * \return inteiro correspondente ao máximo entre x e y
+ */
+int max(int x, int y);
 
 /**
  * safeMalloc faz o malloc e depois garante que a memória foi alocada
@@ -86,6 +104,7 @@ int main(int argc, char *argv[]){
             b_pat = safeMalloc(sizeof(char)*(strlen(line)-1));
             op_flag[3] = 1;
             strcpy(b_pat, line+2);
+            bm(fout, text, b_pat);
         }else if(line[0] == 'X'){
             /* Fechar todos os ficheiros e 
             * libertar memória antes de sair */
@@ -222,6 +241,66 @@ void kmp(FILE *file, char *text, char *pat){
     printf("%d %d\n", count, a);
     free(pre);
 }
+
+void bm(FILE *file, char *text, char *pat){
+
+    int comparissons = 0, i = 0, j = 0;
+    char *letters = NULL;
+    int *shift_values = NULL;
+    int text_size = strlen(text);
+    int pat_size = strlen(pat);
+    int numOfSkips = 0;
+
+    letters = safeMalloc(sizeof(char)*(pat_size+1));
+    shift_values = safeMalloc(sizeof(int)*(pat_size+1));
+
+    for(i = 0; i < pat_size; i++){
+        for(j = 0; j<pat_size+1; j++){
+            if(letters[j] == 0){
+                letters[j] = pat[i];
+                shift_values[j] = max(1, pat_size-j-1);
+                break;
+            }else{
+                if(letters[j]!=0 && letters[j] == pat[i]){
+                    shift_values[j] = max(1, pat_size-j-1);
+                    break;
+                }
+            }
+        }
+    }
+    shift_values[j++] = pat_size;
+    shift_values[j] = pat_size;
+
+    letters = realloc(letters, sizeof(char)*j);
+    shift_values = realloc(shift_values, sizeof(int)*(j+1));
+
+    for (i=0; i<=(text_size-pat_size); i+=numOfSkips){
+       numOfSkips = 0;
+       for(j=pat_size-1; j>=0; j--){
+           comparissons++;
+           if(pat[j] != text[i+j]){
+               numOfSkips = bm_aux(text[i+j], letters, shift_values);
+               break;
+           }
+       }
+       if(numOfSkips == 0){fprintf(file,"%d ",i+j+1); numOfSkips=1;} /*pattern*/
+   }
+   fprintf(file,"\n%d\n", comparissons);
+}
+
+int bm_aux(char letter, char *table_letters, int *shift_values){
+    
+    int i, tableSize = strlen(table_letters);
+
+    for(i=0; i<tableSize; i++){
+        if(table_letters[i] == letter){
+            return shift_values[i];
+        }
+    }
+    return shift_values[i];
+}
+
+int max(int x, int y) { return (x > y)? x: y; } 
 
 void* safeMalloc(size_t size){
     
