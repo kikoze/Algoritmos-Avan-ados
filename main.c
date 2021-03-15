@@ -7,12 +7,14 @@
  * e aloca memória para um buffer com o tamanho da linha ldia
  * \param file ficheiro de onde são lidas as linhas
  * \param buffer string a ser preenchida com o que foi lido
+ * \return linha do ficheiro lida
  */
 char* readLine(FILE *file, char *buffer);
 
 /**
  * naive verifica a existência de um padrão num determinado 
  * texto utilizado o naive algorithm de procura
+ * \param file ficheiro onde é escrito o output
  * \param text texto onde um certo padrão deve ser procurado
  * \param pat padrão a encontrar
  */
@@ -21,10 +23,11 @@ void naive(FILE *file, char *text, char *pat);
 /**
  * naive verifica a existência de um padrão num determinado 
  * texto utilizado o algoritmo Knuth-Morris-Pratt
+ * \param file ficheiro onde é escrito o output
  * \param text texto onde um certo padrão deve ser procurado
  * \param pat padrão a encontrar
  */
-void kmt(FILE *file, char *text, char *pat);
+void kmp(FILE *file, char *text, char *pat);
 
 /**
  * safeMalloc faz o malloc e depois garante que a memória foi alocada
@@ -32,6 +35,13 @@ void kmt(FILE *file, char *text, char *pat);
  * \return ponteiro resultante do malloc de size bytes
  */
 void* safeMalloc(size_t size);
+
+/**
+ * safeMalloc faz o malloc e depois garante que a memória foi alocada
+ * \param size comprimento da memória a realocar
+ * \return ponteiro resultante do realloc de size bytes
+ */
+void* safeRealloc(int size);
 
 int main(int argc, char *argv[]){
 
@@ -70,7 +80,7 @@ int main(int argc, char *argv[]){
             k_pat = safeMalloc(sizeof(char)*(strlen(line)-1));
             op_flag[2] = 1;
             strcpy(k_pat, line+2);
-            kmt(fout, text, k_pat);
+            kmp(fout, text, k_pat);
         }else if(line[0] == 'B'){
             /* Boyer-Moore algorithm */
             b_pat = safeMalloc(sizeof(char)*(strlen(line)-1));
@@ -105,21 +115,21 @@ char* readLine(FILE *file, char *buffer){
     int maxLen = 128, count = 0;
     char ch;
 
-    buffer = safeMalloc(sizeof(char) * maxLen);
+    buffer = safeMalloc(sizeof(char)*maxLen);
 
     if (file == NULL) {
         printf("Ficheiro input vazio.");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     ch = getc(file);
     /* Percorrer ficheiro caracter a caracter 
     * até encontrar um \n ou EOF */
-    while ((ch != '\n') && (ch != EOF)) {
-        if (count == maxLen) {
+    while((ch != '\n') && (ch != EOF)){
+        if(count == maxLen){
             maxLen += 1;
             buffer = realloc(buffer, maxLen);
-            if (buffer == NULL) {
+            if(buffer == NULL){
                 printf("Erro de memória no buffer.");
                 exit(EXIT_FAILURE);
             }
@@ -128,9 +138,12 @@ char* readLine(FILE *file, char *buffer){
         count++;
         ch = getc(file);
     }
-
     buffer[count] = '\0';
     buffer = realloc(buffer, count + 1);
+    if(buffer == NULL){
+        printf("Erro de memória no buffer.");
+        exit(EXIT_FAILURE);
+    }
 
     return buffer;
 }
@@ -158,7 +171,7 @@ void naive(FILE *file, char *text, char *pat){
 }
 
 /* Função ainda não terminada */
-void kmt(FILE *file, char *text, char *pat){
+void kmp(FILE *file, char *text, char *pat){
 
     int count = 0, m = 0, n = 0, i = 0, j = 0;
     int *pre = NULL;
@@ -175,38 +188,57 @@ void kmt(FILE *file, char *text, char *pat){
         if(pat[i+1] == pat[j])
             i++;
         pre[j] = i;
+        printf("%d\n",pre[j]);
     }
+    int a=0;
     i = 0;
     j = 0;
-
     /* Encontrar padrão */
+    printf("i %d %d %d\n", i,j,count);
     while(i < n){ 
-        count++;
+        if(i < n-1)
+            a++;
         if(pat[j] == text[i]){ 
-            /*count++;*/
             j++; 
             i++; 
+            printf("a %d %d %d %d\n", i,j,count,a);
         }
         if(j == m){   
+            fprintf(file,"%d ", i-j);
+            j = pre[j-1];
             count++; 
-            fprintf(file, "%d ", i-j);
-            j = pre[j-1]; 
+            printf("b %d %d %d %d\n", i,j,count,a);
         }else if(i < n && pat[j] != text[i]){ 
-            /*count++;*/
-            if(j != 0) 
-                j = pre[j-1]; 
-            else
+            if(j != 0){
+                j = pre[j-1];
+                count++;
+                printf("c %d %d %d %d\n", i,j,count,a);
+            }else{
                 i = i+1; 
+                printf("d %d %d %d %d\n", i,j,count,a);}
         } 
     } 
-    fprintf(file,"\n%d\n",count);
+    fprintf(file,"\n%d\n", count);
+    printf("%d %d\n", count, a);
+    free(pre);
 }
 
 void* safeMalloc(size_t size){
     
     /* Alocar memória de uma variável do tipo desejado */
     void* p = malloc(size);
-    if (p == NULL)
+    if(p == NULL)
+        exit(EXIT_FAILURE);
+    return p;
+}
+
+void* safeRealloc(int size){
+    
+    /* Relocar memória de uma variável do tipo desejado */
+    void* p = NULL;
+
+    p = realloc(p, size);
+    if(p == NULL)
         exit(EXIT_FAILURE);
     return p;
 }
