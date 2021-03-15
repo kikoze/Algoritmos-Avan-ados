@@ -173,7 +173,7 @@ void naive(FILE *file, char *text, char *pat){
 
     /* Percorre o texto todo até ao segmento de 
     * tamanho igual ao padrão a encontrar */
-    for(n = 0; n < strlen(text)-strlen(pat); n++){
+    for(n = 0; n < strlen(text)-strlen(pat)+1; n++){
         count = 0;
         for(m = 0; m < strlen(pat)-1; m++){
             if(pat[m] == text[n+m]){
@@ -192,7 +192,7 @@ void naive(FILE *file, char *text, char *pat){
 /* Função ainda não terminada */
 void kmp(FILE *file, char *text, char *pat){
 
-    int count = 0, m = 0, n = 0, i = 0, j = 0;
+    int comparissons = 0, m = 0, n = 0, i = 0, j = 0;
     int *pre = NULL;
 
     pre = safeMalloc(sizeof(int)*strlen(pat));
@@ -209,53 +209,45 @@ void kmp(FILE *file, char *text, char *pat){
         pre[j] = i;
         printf("%d\n",pre[j]);
     }
-    int a=0;
+
     i = 0;
     j = 0;
     /* Encontrar padrão */
-    printf("i %d %d %d\n", i,j,count);
     while(i < n){ 
         if(i < n-1)
-            a++;
+            comparissons++;
         if(pat[j] == text[i]){ 
             j++; 
             i++; 
-            printf("a %d %d %d %d\n", i,j,count,a);
         }
-        if(j == m){   
+        if(j == m){  
             fprintf(file,"%d ", i-j);
             j = pre[j-1];
-            count++; 
-            printf("b %d %d %d %d\n", i,j,count,a);
+            comparissons++;
         }else if(i < n && pat[j] != text[i]){ 
-            if(j != 0){
+            if(j != 0)
                 j = pre[j-1];
-                count++;
-                printf("c %d %d %d %d\n", i,j,count,a);
-            }else{
+            else
                 i = i+1; 
-                printf("d %d %d %d %d\n", i,j,count,a);}
         } 
     } 
-    fprintf(file,"\n%d\n", count);
-    printf("%d %d\n", count, a);
+    fprintf(file,"\n%d \n", comparissons);
+    printf("%d\n", comparissons);
     free(pre);
 }
 
 void bm(FILE *file, char *text, char *pat){
 
-    int comparissons = 0, i = 0, j = 0;
-    char *letters = NULL;
+    int text_size = strlen(text), pat_size = strlen(pat);
+    int comparissons = 0, numOfSkips = 0, i = 0, j = 0;
     int *shift_values = NULL;
-    int text_size = strlen(text);
-    int pat_size = strlen(pat);
-    int numOfSkips = 0;
+    char *letters = NULL;
 
     letters = safeMalloc(sizeof(char)*(pat_size+1));
     shift_values = safeMalloc(sizeof(int)*(pat_size+1));
 
     for(i = 0; i < pat_size; i++){
-        for(j = 0; j<pat_size+1; j++){
+        for(j = 0; j < pat_size+1; j++){
             if(letters[j] == 0){
                 letters[j] = pat[i];
                 shift_values[j] = max(1, pat_size-j-1);
@@ -274,9 +266,9 @@ void bm(FILE *file, char *text, char *pat){
     letters = realloc(letters, sizeof(char)*j);
     shift_values = realloc(shift_values, sizeof(int)*(j+1));
 
-    for (i=0; i<=(text_size-pat_size); i+=numOfSkips){
+    for (i = 0; i <= (text_size-pat_size); i += numOfSkips){
        numOfSkips = 0;
-       for(j=pat_size-1; j>=0; j--){
+       for(j = pat_size-1; j >= 0; j--){
            comparissons++;
            if(pat[j] != text[i+j]){
                numOfSkips = bm_aux(text[i+j], letters, shift_values);
@@ -285,7 +277,7 @@ void bm(FILE *file, char *text, char *pat){
        }
        if(numOfSkips == 0){fprintf(file,"%d ",i+j+1); numOfSkips=1;} /*pattern*/
    }
-   fprintf(file,"\n%d\n", comparissons);
+   fprintf(file,"\n%d \n", comparissons);
 }
 
 int bm_aux(char letter, char *table_letters, int *shift_values){
