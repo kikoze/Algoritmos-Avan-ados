@@ -207,7 +207,6 @@ void kmp(FILE *file, char *text, char *pat){
         if(pat[i+1] == pat[j])
             i++;
         pre[j] = i;
-        printf("%d\n",pre[j]);
     }
 
     i = 0;
@@ -232,7 +231,6 @@ void kmp(FILE *file, char *text, char *pat){
         } 
     } 
     fprintf(file,"\n%d \n", comparissons);
-    printf("%d\n", comparissons);
     free(pre);
 }
 
