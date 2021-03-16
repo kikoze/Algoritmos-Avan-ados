@@ -18,7 +18,7 @@ char* readLine(FILE *file, char *buffer);
  * \param text texto onde um certo padrão deve ser procurado
  * \param pat padrão a encontrar
  */
-void naive(FILE *file, char *text, char *pat);
+void naive(char *text, char *pat);
 
 /**
  * kmp verifica a existência de um padrão num determinado 
@@ -27,7 +27,7 @@ void naive(FILE *file, char *text, char *pat);
  * \param text texto onde um certo padrão deve ser procurado
  * \param pat padrão a encontrar
  */
-void kmp(FILE *file, char *text, char *pat);
+void kmp(char *text, char *pat);
 
 /**
  * bm verifica a existência de um padrão num determinado 
@@ -35,9 +35,9 @@ void kmp(FILE *file, char *text, char *pat);
  * \param text texto onde um certo padrão deve ser procurado
  * \param pat padrão a encontrar
  */
-void bm(FILE *file, char *text, char *pat);
+void bm(char *text, char *pat);
 
-int bm_aux(char letter, char *table_letters, int *shit_values);
+int bm_aux(char letter, char *table_letters, int *shit_values, int tableSize);
 
 /**
  * max retorna o máximo entre dois inteiros
@@ -63,7 +63,7 @@ void* safeRealloc(int size);
 
 int main(int argc, char *argv[]){
 
-    FILE *fin, *fout;
+    FILE *fin;
     char *line = NULL, *text = NULL;
     char *n_pat = NULL, *k_pat = NULL, *b_pat = NULL;
     int op_flag[4] = {0,0,0,0};
@@ -74,9 +74,6 @@ int main(int argc, char *argv[]){
     /* Abrir ficheiro com instruções */
     fin = fopen("input", "r");
     if(fin == NULL)
-        exit(EXIT_FAILURE);
-    fout = fopen(argv[2], "w");
-    if(fout == NULL)
         exit(EXIT_FAILURE);
 
     while (!feof(fin)){
@@ -92,33 +89,33 @@ int main(int argc, char *argv[]){
             n_pat = safeMalloc(sizeof(char)*(strlen(line)-1));
             op_flag[1] = 1;
             strcpy(n_pat, line+2);
-            naive(fout, text, n_pat);
+            naive(text, n_pat);
         }else if(line[0] == 'K'){
             /* Knuth-Morris-Pratt algorithm */
             k_pat = safeMalloc(sizeof(char)*(strlen(line)-1));
             op_flag[2] = 1;
             strcpy(k_pat, line+2);
-            kmp(fout, text, k_pat);
+            kmp(text, k_pat);
         }else if(line[0] == 'B'){
             /* Boyer-Moore algorithm */
             b_pat = safeMalloc(sizeof(char)*(strlen(line)-1));
             op_flag[3] = 1;
             strcpy(b_pat, line+2);
-            bm(fout, text, b_pat);
+            bm(text, b_pat);
         }else if(line[0] == 'X'){
             /* Fechar todos os ficheiros e 
             * libertar memória antes de sair */
             fclose(fin);
-            fclose(fout);
+            /*fclose(fout);*/
             if(line){
                 free(line);
                 if(op_flag[0])
                     free(text);
-                if(op_flag[0])
+                if(op_flag[1])
                     free(n_pat);
-                if(op_flag[0])
+                if(op_flag[2])
                     free(k_pat);
-                if(op_flag[0])
+                if(op_flag[3])
                     free(b_pat);
             }
             exit(0);
@@ -167,7 +164,7 @@ char* readLine(FILE *file, char *buffer){
     return buffer;
 }
 
-void naive(FILE *file, char *text, char *pat){
+void naive(char *text, char *pat){
 
     int n = 0, m = 0, count = 0;
 
@@ -184,13 +181,13 @@ void naive(FILE *file, char *text, char *pat){
         * correspondência num dado ciclo, então 
         * o padrão foi encontrado */
         if(count == strlen(pat)-1)
-            fprintf(file, "%d ", n);
+            printf("%d ", n);
     }
-    fprintf(file, "\n");
+    printf("\n");
 }
 
 /* Função ainda não terminada */
-void kmp(FILE *file, char *text, char *pat){
+void kmp(char *text, char *pat){
 
     int comparissons = 0, m = 0, n = 0, i = 0, j = 0;
     int *pre = NULL;
@@ -220,7 +217,7 @@ void kmp(FILE *file, char *text, char *pat){
             i++; 
         }
         if(j == m){  
-            fprintf(file,"%d ", i-j);
+            printf("%d ", i-j);
             j = pre[j-1];
             comparissons++;
         }else if(i < n && pat[j] != text[i]){ 
@@ -230,18 +227,18 @@ void kmp(FILE *file, char *text, char *pat){
                 i = i+1; 
         } 
     } 
-    fprintf(file,"\n%d \n", comparissons);
+    printf("\n%d \n", comparissons);
     free(pre);
 }
 
-void bm(FILE *file, char *text, char *pat){
+void bm(char *text, char *pat){
 
     int text_size = strlen(text), pat_size = strlen(pat);
     int comparissons = 0, numOfSkips = 0, i = 0, j = 0;
     int *shift_values = NULL;
     char *letters = NULL;
 
-    letters = safeMalloc(sizeof(char)*(pat_size+1));
+    letters = safeMalloc(sizeof(char)*(pat_size+10));
     shift_values = safeMalloc(sizeof(int)*(pat_size+1));
 
     for(i = 0; i < pat_size; i++){
@@ -258,29 +255,37 @@ void bm(FILE *file, char *text, char *pat){
             }
         }
     }
-    shift_values[j++] = pat_size;
-    shift_values[j] = pat_size;
 
-    letters = realloc(letters, sizeof(char)*j);
+
+    shift_values[j++] = pat_size;
+    letters[j] = '\0';
+    shift_values[j] = pat_size;
+    int tableSize = j;
+
+    letters = realloc(letters, sizeof(char)*(j+1));
     shift_values = realloc(shift_values, sizeof(int)*(j+1));
 
+    
     for (i = 0; i <= (text_size-pat_size); i += numOfSkips){
        numOfSkips = 0;
        for(j = pat_size-1; j >= 0; j--){
            comparissons++;
            if(pat[j] != text[i+j]){
-               numOfSkips = bm_aux(text[i+j], letters, shift_values);
+               numOfSkips = bm_aux(text[i+j], letters, shift_values, tableSize);
                break;
            }
        }
-       if(numOfSkips == 0){fprintf(file,"%d ",i+j+1); numOfSkips=1;} /*pattern*/
+       if(numOfSkips == 0){printf("%d ",i+j+1); numOfSkips=1;} /*pattern*/
    }
-   fprintf(file,"\n%d \n", comparissons);
+   printf("\n%d \n", comparissons);
+
+   free(letters);
+   free(shift_values);
 }
 
-int bm_aux(char letter, char *table_letters, int *shift_values){
+int bm_aux(char letter, char *table_letters, int *shift_values, int tableSize){
     
-    int i, tableSize = strlen(table_letters);
+    int i;
 
     for(i=0; i<tableSize; i++){
         if(table_letters[i] == letter){
