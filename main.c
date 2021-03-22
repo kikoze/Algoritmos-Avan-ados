@@ -215,7 +215,7 @@ void kmp(char *text, char *pat){
             j++;
         }
         if(j == m)
-            fprintf(file,"%d ", i-m);
+            printf("%d ", i-m);
         if(j == 0){
             i++;
             comparissons++;
@@ -225,7 +225,7 @@ void kmp(char *text, char *pat){
             j = pre[j-1];
         }
     }
-    fprintf(file,"\n%d \n", comparissons);
+    printf("\n%d \n", comparissons);
     free(pre);
 }
 
