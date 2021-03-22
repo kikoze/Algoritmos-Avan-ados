@@ -175,7 +175,7 @@ void naive(char *text, char *pat){
         for(m = 0; m < strlen(pat)-1; m++){
             if(pat[m] == text[n+m]){
                 count++;
-            }
+            }else continue;
         }
         /* Se todos caracteres de pat tiverem 
         * correspondência num dado ciclo, então 
@@ -208,26 +208,24 @@ void kmp(char *text, char *pat){
 
     i = 0;
     j = 0;
-    /* Encontrar padrão */
-    while(i < n){ 
-        if(i < n-1)
+    while(i + m - j <= n){
+        while(pat[j] == text[i] && j < m){
             comparissons++;
-        if(pat[j] == text[i]){ 
-            j++; 
-            i++; 
+            i++;
+            j++;
         }
-        if(j == m){  
-            printf("%d ", i-j);
-            j = pre[j-1];
+        if(j == m)
+            fprintf(file,"%d ", i-m);
+        if(j == 0){
+            i++;
             comparissons++;
-        }else if(i < n && pat[j] != text[i]){ 
-            if(j != 0)
-                j = pre[j-1];
-            else
-                i = i+1; 
-        } 
-    } 
-    printf("\n%d \n", comparissons);
+        }else{
+            if(i < n)
+                comparissons++;
+            j = pre[j-1];
+        }
+    }
+    fprintf(file,"\n%d \n", comparissons);
     free(pre);
 }
 
