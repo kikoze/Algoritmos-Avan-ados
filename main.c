@@ -68,9 +68,6 @@ int main(int argc, char *argv[]){
     char *n_pat = NULL, *k_pat = NULL, *b_pat = NULL;
     int op_flag[4] = {0,0,0,0};
 
-    if(argc < 2){
-        exit(0);
-    }
     /* Abrir ficheiro com instruções */
     fin = fopen("input", "r");
     if(fin == NULL)
@@ -138,7 +135,7 @@ char* readLine(FILE *file, char *buffer){
         exit(EXIT_FAILURE);
     }
 
-    ch = getc(file);
+    ch = getchar();
     /* Percorrer ficheiro caracter a caracter 
     * até encontrar um \n ou EOF */
     while((ch != '\n') && (ch != EOF)){
@@ -152,7 +149,7 @@ char* readLine(FILE *file, char *buffer){
         }
         buffer[count] = ch;
         count++;
-        ch = getc(file);
+        ch = getchar();
     }
     buffer[count] = '\0';
     buffer = realloc(buffer, count + 1);
@@ -236,12 +233,15 @@ void bm(char *text, char *pat){
     int *shift_values = NULL;
     char *letters = NULL;
 
-    letters = safeMalloc(sizeof(char)*(pat_size+10));
+    letters = safeMalloc(sizeof(char)*(pat_size+1));
+    for(i=0; i<pat_size+1; i++){
+        letters[i]=0;
+    }
     shift_values = safeMalloc(sizeof(int)*(pat_size+1));
 
     for(i = 0; i < pat_size; i++){
         for(j = 0; j < pat_size+1; j++){
-            if(letters[j] == 0){
+            if(letters && letters[j] == 0){
                 letters[j] = pat[i];
                 shift_values[j] = max(1, pat_size-j-1);
                 break;
