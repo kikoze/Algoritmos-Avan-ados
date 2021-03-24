@@ -63,18 +63,12 @@ void* safeRealloc(int size);
 
 int main(int argc, char *argv[]){
 
-    FILE *fin;
     char *line = NULL, *text = NULL;
     char *n_pat = NULL, *k_pat = NULL, *b_pat = NULL;
     int op_flag[4] = {0,0,0,0};
 
-    /* Abrir ficheiro com instruções */
-    fin = fopen("input", "r");
-    if(fin == NULL)
-        exit(EXIT_FAILURE);
-
-    while (!feof(fin)){
-        line = readLine(fin, line);
+    while (!feof(stdin)){
+        line = readLine(stdin, line);
         /* Verificar a primeira letra da linha e a partir
         * daí fazer a operação desejada */
         if(line[0] == 'T'){
@@ -100,10 +94,7 @@ int main(int argc, char *argv[]){
             strcpy(b_pat, line+2);
             bm(text, b_pat);
         }else if(line[0] == 'X'){
-            /* Fechar todos os ficheiros e 
-            * libertar memória antes de sair */
-            fclose(fin);
-            /*fclose(fout);*/
+            /* Libertar memória antes de sair */
             if(line){
                 free(line);
                 if(op_flag[0])
@@ -129,11 +120,6 @@ char* readLine(FILE *file, char *buffer){
     char ch;
 
     buffer = safeMalloc(sizeof(char)*maxLen);
-
-    if (file == NULL) {
-        printf("Ficheiro input vazio.");
-        exit(EXIT_FAILURE);
-    }
 
     ch = getchar();
     /* Percorrer ficheiro caracter a caracter 
@@ -169,21 +155,22 @@ void naive(char *text, char *pat){
     * tamanho igual ao padrão a encontrar */
     for(n = 0; n < strlen(text)-strlen(pat)+1; n++){
         count = 0;
-        for(m = 0; m < strlen(pat)-1; m++){
+        for(m = 0; m < strlen(pat); m++){
+            /*printf("%d ", m);
+            printf("%c %c\n",pat[m], text[n+m]);*/
             if(pat[m] == text[n+m]){
                 count++;
-            }else continue;
+            }else break;
         }
         /* Se todos caracteres de pat tiverem 
         * correspondência num dado ciclo, então 
         * o padrão foi encontrado */
-        if(count == strlen(pat)-1)
+        if(count == strlen(pat))
             printf("%d ", n);
     }
     printf("\n");
 }
 
-/* Função ainda não terminada */
 void kmp(char *text, char *pat){
 
     int comparissons = 0, m = 0, n = 0, i = 0, j = 0;
@@ -234,7 +221,7 @@ void bm(char *text, char *pat){
     char *letters = NULL;
 
     letters = safeMalloc(sizeof(char)*(pat_size+1));
-    for(i=0; i<pat_size+1; i++){
+    for(i = 0; i < pat_size + 1; i++){
         letters[i]=0;
     }
     shift_values = safeMalloc(sizeof(int)*(pat_size+1));
@@ -253,7 +240,6 @@ void bm(char *text, char *pat){
             }
         }
     }
-
 
     shift_values[j++] = pat_size;
     letters[j] = '\0';
