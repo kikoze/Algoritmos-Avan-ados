@@ -37,7 +37,9 @@ void kmp(char *text, char *pat);
  */
 void bm(char *text, char *pat);
 
-int bm_aux(char letter, char *table_letters, int *shit_values, int tableSize);
+void generateBadCharShift(int bad_char_shift[], char *pattern, int pat_size);
+void generateSuffixShift(int suffix_shift[], char *pattern, int pat_size);
+int *suffixes(char *pattern, int pat_size, int *buffer);
 
 /**
  * max retorna o máximo entre dois inteiros
@@ -116,7 +118,7 @@ int main(int argc, char *argv[]){
 
 char* readLine(FILE *file, char *buffer){
 
-    int maxLen = 128, count = 0;
+    int maxLen = 1280, count = 0;
     char ch;
 
     buffer = safeMalloc(sizeof(char)*maxLen);
@@ -198,16 +200,16 @@ void kmp(char *text, char *pat){
             i++;
             j++;
         }
-        if(j == m)
+        if(j == m){
             printf("%d ", i-m);
+            /*j = pre[j-1];*/
+        }
         if(j == 0){
             i++;
-            comparissons++;
-        }else{
-            if(i < n)
-                comparissons++;
+        }else
             j = pre[j-1];
-        }
+        if(i < n)
+            comparissons++;
     }
     printf("\n%d \n", comparissons);
     free(pre);
@@ -215,68 +217,85 @@ void kmp(char *text, char *pat){
 
 void bm(char *text, char *pat){
 
-    int text_size = strlen(text), pat_size = strlen(pat);
-    int comparissons = 0, numOfSkips = 0, i = 0, j = 0;
-    int *shift_values = NULL;
-    char *letters = NULL;
+    int pat_size = strlen(pat);
+    int text_size = strlen(text);
 
-    letters = safeMalloc(sizeof(char)*(pat_size+1));
-    for(i = 0; i < pat_size + 1; i++){
-        letters[i]=0;
-    }
-    shift_values = safeMalloc(sizeof(int)*(pat_size+1));
+    int i, j=0, comparisons=0;
 
-    for(i = 0; i < pat_size; i++){
-        for(j = 0; j < pat_size+1; j++){
-            if(letters && letters[j] == 0){
-                letters[j] = pat[i];
-                shift_values[j] = max(1, pat_size-j-1);
-                break;
-            }else{
-                if(letters[j]!=0 && letters[j] == pat[i]){
-                    shift_values[j] = max(1, pat_size-j-1);
-                    break;
-                }
-            }
+    int bad_char_shift[57];
+    for(i=0; i<57; i++){bad_char_shift[i]=pat_size;};
+    int suffix_shift[pat_size];
+    for(i=0; i<pat_size; i++){suffix_shift[i]=pat_size;};
+
+    /* Preprocessing */
+    generateBadCharShift(bad_char_shift, pat, pat_size);
+    generateSuffixShift(suffix_shift, pat, pat_size);
+
+    /* Searching */
+    while(j <= (text_size-pat_size)){
+        for (i = pat_size - 1; (i >= 0) && (pat[i] == text[i + j]); --i){comparisons++;}
+        if (i < 0) {
+            printf("%d ", j);
+            j += suffix_shift[0];
+        }
+        else {
+            comparisons++;
+            j += max(suffix_shift[i], bad_char_shift[((int)text[i + j])-65] - pat_size + 1 + i);
         }
     }
 
-    shift_values[j++] = pat_size;
-    letters[j] = '\0';
-    shift_values[j] = pat_size;
-    int tableSize = j;
-
-    letters = realloc(letters, sizeof(char)*(j+1));
-    shift_values = realloc(shift_values, sizeof(int)*(j+1));
-
-    
-    for (i = 0; i <= (text_size-pat_size); i += numOfSkips){
-       numOfSkips = 0;
-       for(j = pat_size-1; j >= 0; j--){
-           comparissons++;
-           if(pat[j] != text[i+j]){
-               numOfSkips = bm_aux(text[i+j], letters, shift_values, tableSize);
-               break;
-           }
-       }
-       if(numOfSkips == 0){printf("%d ",i+j+1); numOfSkips=1;} /*pattern*/
-   }
-   printf("\n%d \n", comparissons);
-
-   free(letters);
-   free(shift_values);
+    printf("\n%d \n", comparisons);
 }
 
-int bm_aux(char letter, char *table_letters, int *shift_values, int tableSize){
-    
+void generateBadCharShift(int bad_char_shift[], char *pattern, int pat_size){
+
     int i;
 
-    for(i=0; i<tableSize; i++){
-        if(table_letters[i] == letter){
-            return shift_values[i];
+    for(i=0; i<57; ++i){
+        bad_char_shift[i] = pat_size;
+    }
+    for(i=0; i<pat_size - 1; ++i){
+        bad_char_shift[((int)pattern[i])-65] = pat_size -i -1;
+    }
+}
+
+void generateSuffixShift(int suffix_shift[], char *pattern, int pat_size){
+    int buffer[pat_size];
+    memset(buffer, 0, pat_size*sizeof(int));
+    int i, j;
+
+    int *buffer_aux = suffixes(pattern, pat_size, buffer);
+
+    for (i = pat_size - 1; i >= 0; --i)
+        if (buffer_aux[i] == i + 1)
+            for (j=0; j < pat_size - 1 - i; ++j){
+                if (suffix_shift[j] == pat_size)
+                    suffix_shift[j] = pat_size - 1 - i;
+            }
+    for (i = 0; i <= pat_size - 2; ++i)
+        suffix_shift[pat_size - 1 - buffer_aux[i]] = pat_size - 1 - i;
+}
+
+int *suffixes(char *pattern, int pat_size, int *buffer){
+    int i, j, k = 0;
+
+    buffer[pat_size-1] = pat_size;
+    j = pat_size-1;
+
+    for (i = pat_size - 2; i >= 0; --i) {
+        if (i > j && buffer[i + pat_size - 1 - k] < i - j)
+            buffer[i] = buffer[i + pat_size - 1 - k];
+        else {
+            if (i < j)
+                j = i;
+            k = i;
+            while (j >= 0 && pattern[j] == pattern[j + pat_size - 1 - k])
+                --j;
+            buffer[i] = k - j;
         }
     }
-    return shift_values[i];
+
+    return buffer;
 }
 
 int max(int x, int y) { return (x > y)? x: y; } 
