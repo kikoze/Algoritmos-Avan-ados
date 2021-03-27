@@ -175,42 +175,49 @@ void naive(char *text, char *pat){
 
 void kmp(char *text, char *pat){
 
-    int comparissons = 0, m = 0, n = 0, i = 0, j = 0;
+    int comparissons = 0, m = 0, n = 0, i = 0, j = -1;
     int *pre = NULL;
 
-    pre = safeMalloc(sizeof(int)*strlen(pat));
-
-    /* Construir a prefix table */
     n = strlen(text);
     m = strlen(pat);
-    pre[0] = 0;
-    for(j = 1; j < m; j++){
-        while(i > 0 && pat[i+1] != pat[j])
-            i = pre[i];
-        if(pat[i+1] == pat[j])
-            i++;
-        pre[j] = i;
+
+    pre = safeMalloc(sizeof(int)*(m+1));
+
+    /* Construir a prefix table */
+
+    pre[0] = -1;
+    while (i < m) {
+        while (j > -1 && pat[i] != pat[j])
+            j = pre[j];
+        i++;
+        j++;
+        if (pat[i] == pat[j])
+            pre[i] = pre[j];
+        else {
+            pre[i] = j;
+        }
     }
 
     i = 0;
     j = 0;
-    while(i + m - j <= n){
-        while(pat[j] == text[i] && j < m){
-            comparissons++;
-            i++;
-            j++;
+
+    while (j < n) {
+        while (i > -1 && pat[i] != text[j]){
+            i = pre[i];
         }
-        if(j == m){
-            printf("%d ", i-m);
-            /*j = pre[j-1];*/
+        i++;
+        j++;
+        
+        comparissons++; 
+        if (i >= m) {
+            if(j<n)
+                comparissons++;
+            printf("%d ", j-i);
+            i = pre[i];
+            
         }
-        if(j == 0){
-            i++;
-        }else
-            j = pre[j-1];
-        if(i < n)
-            comparissons++;
     }
+
     printf("\n%d \n", comparissons);
     free(pre);
 }
