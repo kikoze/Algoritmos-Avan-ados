@@ -126,7 +126,7 @@ char* readLine(FILE *file, char *buffer){
     * até encontrar um \n ou EOF */
     while((ch != '\n') && (ch != EOF)){
         if(count == maxLen){
-            maxLen += 1;
+            maxLen += 128;
             buffer = realloc(buffer, maxLen);
             if(buffer == NULL){
                 printf("Erro de memória no buffer.");
